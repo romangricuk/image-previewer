@@ -7,9 +7,11 @@ import (
 	"image"
 	_ "image/png"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -19,18 +21,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func startTestApplication() (*app.Application, error) {
+func getFreePort() (string, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return "", err
+	}
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return "", err
+	}
+	defer l.Close()
+	port := l.Addr().(*net.TCPAddr).Port
+	return strconv.Itoa(port), nil
+}
+
+func startTestApplication() (application *app.Application, port string, err error) {
+	port, err = getFreePort()
+	if err != nil {
+		return nil, "", err
+	}
+	fmt.Printf("free port: %s\n", port)
 	// Устанавливаем переменные окружения для тестов
-	os.Setenv("APP_PORT", "8080")
+	os.Setenv("APP_PORT", port)
 	os.Setenv("CACHE_SIZE", "2")
 	os.Setenv("CACHE_DIR", "../cache")
 	os.Setenv("LOG_LEVEL", "debug")
 	os.Setenv("SHUTDOWN_TIMEOUT", "5s")
-	os.Setenv("DISABLE_LOGGING", "true")
+	//os.Setenv("DISABLE_LOGGING", "true")
 
-	application, err := app.NewApplication("")
+	application, err = app.NewApplication("")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	go func() {
@@ -42,7 +63,7 @@ func startTestApplication() (*app.Application, error) {
 	// Даем серверу время запуститься
 	time.Sleep(2 * time.Second)
 
-	return application, nil
+	return application, port, nil
 }
 
 func stopTestApplication(application *app.Application) {
@@ -52,7 +73,7 @@ func stopTestApplication(application *app.Application) {
 }
 
 func TestImageSizes(t *testing.T) {
-	application, err := startTestApplication()
+	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
@@ -75,15 +96,22 @@ func TestImageSizes(t *testing.T) {
 	for _, imageName := range images {
 		t.Run("Testing image "+imageName, func(t *testing.T) {
 			imageURL := baseURL + imageName
-			// Убираем "https://" из ссылки для соответствия формату сервиса
-			reqURL := "http://localhost:8080/fill/300/200/" + strings.TrimPrefix(imageURL, "https://")
+
+			reqURL := fmt.Sprintf(
+				"http://localhost:%s/fill/300/200/%s",
+				port,
+				strings.TrimPrefix(imageURL, "https://"),
+			)
 
 			//nolint:gosec,noctx
 			resp, err := http.Get(reqURL)
 			require.NoError(t, err, "Failed to get image %s", imageName)
 			defer resp.Body.Close()
 
-			require.Equal(t, http.StatusOK, resp.StatusCode, "Expected status 200 for image %s", imageName)
+			if resp.StatusCode != http.StatusOK {
+				bodyBytes, _ := io.ReadAll(resp.Body)
+				t.Fatalf("Expected status 200 for image %s, got %d. Response body: %s", imageName, resp.StatusCode, string(bodyBytes))
+			}
 
 			data, err := io.ReadAll(resp.Body)
 			require.NoError(t, err, "Failed to read response body for image %s", imageName)
@@ -100,7 +128,7 @@ func TestImageSizes(t *testing.T) {
 }
 
 func TestDifferentSizes(t *testing.T) {
-	application, err := startTestApplication()
+	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
@@ -120,7 +148,8 @@ func TestDifferentSizes(t *testing.T) {
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("Size_%dx%d", size.width, size.height), func(t *testing.T) {
 			reqURL := fmt.Sprintf(
-				"http://localhost:8080/fill/%d/%d/%s",
+				"http://localhost:%s/fill/%d/%d/%s",
+				port,
 				size.width,
 				size.height,
 				strings.TrimPrefix(baseURL, "https://"),
@@ -147,11 +176,9 @@ func TestDifferentSizes(t *testing.T) {
 }
 
 func TestResponseHeaders(t *testing.T) {
-	application, err := startTestApplication()
+	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
-
-	port := os.Getenv("APP_PORT")
 
 	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/gopher_50x50.jpg"
 	reqURL := fmt.Sprintf(
@@ -174,11 +201,10 @@ func TestResponseHeaders(t *testing.T) {
 }
 
 func TestRequestTimeout(t *testing.T) {
-	application, err := startTestApplication()
+	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
-	port := os.Getenv("APP_PORT")
 	// Используем контролируемый HTTP-сервер, который задерживает ответ
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(3 * time.Second) // Задержка больше, чем таймаут сервера
