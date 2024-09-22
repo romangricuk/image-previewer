@@ -47,7 +47,7 @@ func startTestApplication() (application *app.Application, port string, err erro
 	os.Setenv("CACHE_DIR", "../cache")
 	os.Setenv("LOG_LEVEL", "debug")
 	os.Setenv("SHUTDOWN_TIMEOUT", "5s")
-	//os.Setenv("DISABLE_LOGGING", "true")
+	// os.Setenv("DISABLE_LOGGING", "true")
 
 	application, err = app.NewApplication("")
 	if err != nil {
@@ -110,7 +110,12 @@ func TestImageSizes(t *testing.T) {
 
 			if resp.StatusCode != http.StatusOK {
 				bodyBytes, _ := io.ReadAll(resp.Body)
-				t.Fatalf("Expected status 200 for image %s, got %d. Response body: %s", imageName, resp.StatusCode, string(bodyBytes))
+				t.Fatalf(
+					"Expected status 200 for image %s, got %d. Response body: %s",
+					imageName,
+					resp.StatusCode,
+					string(bodyBytes),
+				)
 			}
 
 			data, err := io.ReadAll(resp.Body)
