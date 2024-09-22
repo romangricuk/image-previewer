@@ -248,7 +248,7 @@ func TestImageFromCache(t *testing.T) {
 	var requestCount int32
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&requestCount, 1)
-		http.ServeFile(w, r, "test/data/gopher_50x50.jpg")
+		http.ServeFile(w, r, "data/gopher_50x50.jpg")
 	}))
 	defer testServer.Close()
 
