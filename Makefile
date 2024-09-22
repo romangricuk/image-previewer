@@ -4,7 +4,10 @@ build:
 	go build -o bin/image-previewer ./cmd/image-previewer
 
 run:
-	APP_PORT=8080 CACHE_SIZE=100 CACHE_DIR=./cache LOG_LEVEL=debug go run ./cmd/image-previewer/main.go --config=./config/config.yaml
+	go run ./cmd/image-previewer/main.go --config=./config/config.yaml
 
 test:
-	go test ./...
+	go test -race -count 100 ./internal/...
+
+integration-test:
+	go test ./test/...

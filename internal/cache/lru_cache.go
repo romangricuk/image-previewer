@@ -2,12 +2,13 @@ package cache
 
 import (
 	"container/list"
-	"github.com/romangricuk/image-previewer/internal/logger"
 	"os"
 	"sync"
+
+	"github.com/romangricuk/image-previewer/internal/logger"
 )
 
-type CacheItem struct {
+type cacheItem struct {
 	Key  string
 	Path string
 }
@@ -44,7 +45,7 @@ func (c *LRUCache) Get(key string) (string, bool) {
 
 	if elem, ok := c.items[key]; ok {
 		c.order.MoveToFront(elem)
-		return elem.Value.(*CacheItem).Path, true
+		return elem.Value.(*cacheItem).Path, true
 	}
 	return "", false
 }
@@ -61,7 +62,7 @@ func (c *LRUCache) Put(key, path string) {
 
 	if elem, ok := c.items[key]; ok {
 		c.order.MoveToFront(elem)
-		elem.Value.(*CacheItem).Path = path
+		elem.Value.(*cacheItem).Path = path
 		c.log.Debugf("Updated cache item for key: %s", key)
 		return
 	}
@@ -71,7 +72,7 @@ func (c *LRUCache) Put(key, path string) {
 		elem := c.order.Back()
 		if elem != nil {
 			c.order.Remove(elem)
-			item := elem.Value.(*CacheItem)
+			item := elem.Value.(*cacheItem)
 			delete(c.items, item.Key)
 			// Удаляем файл с диска
 			err := os.Remove(item.Path)
@@ -82,7 +83,7 @@ func (c *LRUCache) Put(key, path string) {
 		}
 	}
 
-	item := &CacheItem{Key: key, Path: path}
+	item := &cacheItem{Key: key, Path: path}
 	elem := c.order.PushFront(item)
 	c.items[key] = elem
 	c.log.Debugf("Added new cache item for key: %s", key)

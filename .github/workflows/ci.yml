@@ -2,35 +2,36 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
 
 jobs:
-  build:
-
+  tests_by_makefile:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v3
 
-      - name: Set up Go 1.22
-        uses: actions/setup-go@v4
+      - name: Set up Go
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.22
+          go-version: '^1.22'
 
       - name: Install golangci-lint
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
 
-      - name: Run golangci-lint
-        run: |
-          golangci-lint run --config=.golangci.yml ./...
+      - name: Run lint
+        run: make lint
 
-      - name: Run tests
-        run: |
-          go test -race -count 100 ./...
+      - name: Run unit tests
+        run: make test
+
+      - name: Run integration tests
+        run: make integration-test
 
       - name: Build
-        run: |
-          go build -o image-previewer ./cmd/image-previewer
+        run: make build

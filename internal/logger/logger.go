@@ -1,12 +1,13 @@
 package logger
 
 import (
+	"io"
+
 	"github.com/romangricuk/image-previewer/internal/config"
 	"github.com/sirupsen/logrus"
-	"io"
 )
 
-// Интерфейс Logger с методами для различных уровней логирования
+// Интерфейс Logger с методами для различных уровней логирования.
 type Logger interface {
 	Info(args ...interface{})
 	Infof(format string, args ...interface{})
@@ -21,12 +22,12 @@ type Logger interface {
 	SetOutput(output io.Writer)
 }
 
-// Структура AppLogger, реализующая интерфейс Logger
+// Структура AppLogger, реализующая интерфейс Logger.
 type AppLogger struct {
 	logger *logrus.Logger
 }
 
-// Фабричная функция для создания нового логгера
+// Фабричная функция для создания нового логгера.
 func New(cfg *config.Config) Logger {
 	log := logrus.New()
 	log.SetLevel(cfg.LogLevel)
@@ -41,7 +42,7 @@ func New(cfg *config.Config) Logger {
 	}
 }
 
-// NewTestLogger создает логгер для использования в тестах
+// NewTestLogger создает логгер для использования в тестах.
 func NewTestLogger() Logger {
 	log := logrus.New()
 	log.SetLevel(logrus.FatalLevel)

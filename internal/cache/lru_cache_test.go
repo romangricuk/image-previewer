@@ -1,15 +1,16 @@
-package test
+package cache_test
 
 import (
 	"fmt"
-	"github.com/romangricuk/image-previewer/internal/cache"
-	"github.com/romangricuk/image-previewer/internal/logger"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/romangricuk/image-previewer/internal/cache"
+	"github.com/romangricuk/image-previewer/internal/logger"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLRUCache(t *testing.T) {
@@ -17,7 +18,7 @@ func TestLRUCache(t *testing.T) {
 	testLogger := logger.NewTestLogger()
 
 	cacheDir := "./test_cache"
-	os.Mkdir(cacheDir, 0755)
+	os.Mkdir(cacheDir, 0o755)
 	defer os.RemoveAll(cacheDir)
 
 	c := cache.NewLRUCache(2, testLogger)
@@ -26,9 +27,9 @@ func TestLRUCache(t *testing.T) {
 	cachePath3 := filepath.Join(cacheDir, "file3")
 
 	// Создаем тестовые файлы
-	os.WriteFile(cachePath1, []byte("data1"), 0644)
-	os.WriteFile(cachePath2, []byte("data2"), 0644)
-	os.WriteFile(cachePath3, []byte("data3"), 0644)
+	os.WriteFile(cachePath1, []byte("data1"), 0o600)
+	os.WriteFile(cachePath2, []byte("data2"), 0o600)
+	os.WriteFile(cachePath3, []byte("data3"), 0o600)
 
 	c.Put("key1", cachePath1)
 	c.Put("key2", cachePath2)
@@ -66,12 +67,12 @@ func TestLRUCache_ZeroCapacity(t *testing.T) {
 	}
 }
 
-func TestLRUCache_RemoveNonexistentFile(t *testing.T) {
+func TestLRUCache_RemoveNonexistentFile(_ *testing.T) {
 	// Инициализация логгера для тестов
 	log := logger.NewTestLogger()
 
 	cacheDir := "./test_cache_nonexistent"
-	os.Mkdir(cacheDir, 0755)
+	os.Mkdir(cacheDir, 0o755)
 	defer os.RemoveAll(cacheDir)
 
 	c := cache.NewLRUCache(1, log)
@@ -84,7 +85,7 @@ func TestLRUCache_RemoveNonexistentFile(t *testing.T) {
 
 	// Добавляем еще один элемент, чтобы вызвать удаление предыдущего
 	anotherCachePath := filepath.Join(cacheDir, "file2")
-	os.WriteFile(anotherCachePath, []byte("data2"), 0644)
+	os.WriteFile(anotherCachePath, []byte("data2"), 0o600)
 	c.Put("key2", anotherCachePath)
 
 	// Проверяем, что ошибок не произошло при попытке удалить несуществующий файл
@@ -181,7 +182,7 @@ func TestLRUCache_ConcurrentAccess(t *testing.T) {
 func TestLRUCache_FileDeletion(t *testing.T) {
 	log := logger.NewTestLogger()
 	cacheDir := "./test_cache_file_deletion"
-	os.Mkdir(cacheDir, 0755)
+	os.Mkdir(cacheDir, 0o755)
 	defer os.RemoveAll(cacheDir)
 
 	c := cache.NewLRUCache(2, log)
@@ -190,9 +191,9 @@ func TestLRUCache_FileDeletion(t *testing.T) {
 	cachePath3 := filepath.Join(cacheDir, "file3")
 
 	// Создаем тестовые файлы
-	os.WriteFile(cachePath1, []byte("data1"), 0644)
-	os.WriteFile(cachePath2, []byte("data2"), 0644)
-	os.WriteFile(cachePath3, []byte("data3"), 0644)
+	os.WriteFile(cachePath1, []byte("data1"), 0o600)
+	os.WriteFile(cachePath2, []byte("data2"), 0o600)
+	os.WriteFile(cachePath3, []byte("data3"), 0o600)
 
 	c.Put("key1", cachePath1)
 	c.Put("key2", cachePath2)

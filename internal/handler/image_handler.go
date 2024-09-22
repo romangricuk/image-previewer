@@ -2,7 +2,7 @@ package handler
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"fmt"
 	"io"
 	"net/http"
@@ -152,10 +152,10 @@ func resizeImage(ctx context.Context, data []byte, width, height int, log logger
 }
 
 func saveToCache(cacheDir, cacheKey string, data []byte, cache *cache.LRUCache, log logger.Logger) error {
-	cacheFileName := fmt.Sprintf("%x.jpg", md5.Sum([]byte(cacheKey)))
+	cacheFileName := fmt.Sprintf("%x.jpg", md5.Sum([]byte(cacheKey))) //nolint:gosec
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 
-	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+	if err := os.WriteFile(cachePath, data, 0o600); err != nil {
 		log.Errorf("Failed to save image to cache: %v", err)
 		return fmt.Errorf("failed to save image to cache")
 	}

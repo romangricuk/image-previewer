@@ -1,6 +1,6 @@
 module github.com/romangricuk/image-previewer
 
-go 1.23
+go 1.22
 
 require (
 	github.com/disintegration/imaging v1.6.2

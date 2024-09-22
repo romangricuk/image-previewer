@@ -3,10 +3,12 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/romangricuk/image-previewer/internal/config"
 	"github.com/romangricuk/image-previewer/internal/handler"
 	"github.com/romangricuk/image-previewer/internal/logger"
-	"net/http"
 )
 
 type Application struct {
@@ -56,7 +58,8 @@ func (app *Application) initRoutes() {
 
 	// Настраиваем сервер
 	app.Server = &http.Server{
-		Addr:    ":" + app.Config.AppPort,
-		Handler: mux,
+		Addr:              ":" + app.Config.AppPort,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 }

@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/png"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/romangricuk/image-previewer/internal/app"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +34,7 @@ func startTestApplication() (*app.Application, error) {
 	}
 
 	go func() {
-		if err := application.Run(); err != nil && err != http.ErrServerClosed {
+		if err := application.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			application.Logger.Errorf("Failed to run application: %v", err)
 		}
 	}()
@@ -78,6 +78,7 @@ func TestImageSizes(t *testing.T) {
 			// Убираем "https://" из ссылки для соответствия формату сервиса
 			reqURL := "http://localhost:8080/fill/300/200/" + strings.TrimPrefix(imageURL, "https://")
 
+			//nolint:gosec,noctx
 			resp, err := http.Get(reqURL)
 			require.NoError(t, err, "Failed to get image %s", imageName)
 			defer resp.Body.Close()
@@ -103,6 +104,7 @@ func TestDifferentSizes(t *testing.T) {
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
+	//nolint:lll
 	baseURL := "https://raw.githubusercontent.com/OtusGolang/final_project/master/examples/image-previewer/_gopher_original_1024x504.jpg"
 
 	sizes := []struct {
@@ -117,9 +119,14 @@ func TestDifferentSizes(t *testing.T) {
 
 	for _, size := range sizes {
 		t.Run(fmt.Sprintf("Size_%dx%d", size.width, size.height), func(t *testing.T) {
-			reqURL := fmt.Sprintf("http://localhost:8080/fill/%d/%d/%s", size.width, size.height, strings.TrimPrefix(baseURL, "https://"))
+			reqURL := fmt.Sprintf(
+				"http://localhost:8080/fill/%d/%d/%s",
+				size.width,
+				size.height,
+				strings.TrimPrefix(baseURL, "https://"),
+			)
 
-			resp, err := http.Get(reqURL)
+			resp, err := http.Get(reqURL) //nolint:gosec,noctx
 			require.NoError(t, err, "Failed to get image")
 			defer resp.Body.Close()
 
@@ -145,15 +152,25 @@ func TestResponseHeaders(t *testing.T) {
 	defer stopTestApplication(application)
 
 	port := os.Getenv("APP_PORT")
+	//nolint:lll
 	baseURL := "https://raw.githubusercontent.com/OtusGolang/final_project/master/examples/image-previewer/gopher_50x50.jpg"
-	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, strings.TrimPrefix(baseURL, "https://"))
+	reqURL := fmt.Sprintf(
+		"http://localhost:%s/fill/300/200/%s",
+		port,
+		strings.TrimPrefix(baseURL, "https://"),
+	)
 
-	resp, err := http.Get(reqURL)
+	resp, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "image/jpeg", resp.Header.Get("Content-Type"), "Expected Content-Type to be image/jpeg")
+	assert.Equal(
+		t,
+		"image/jpeg",
+		resp.Header.Get("Content-Type"),
+		"Expected Content-Type to be image/jpeg",
+	)
 }
 
 func TestRequestTimeout(t *testing.T) {
@@ -175,7 +192,7 @@ func TestRequestTimeout(t *testing.T) {
 	client := &http.Client{
 		Timeout: 2 * time.Second, // Устанавливаем таймаут меньше задержки сервера
 	}
-	resp, err := client.Get(reqURL)
+	resp, err := client.Get(reqURL) //nolint:noctx
 	require.Error(t, err, "Expected timeout error")
 	if resp != nil {
 		resp.Body.Close()

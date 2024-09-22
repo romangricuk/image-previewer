@@ -2,8 +2,9 @@ package utils
 
 import (
 	"context"
-	"github.com/romangricuk/image-previewer/internal/logger"
 	"net/http"
+
+	"github.com/romangricuk/image-previewer/internal/logger"
 )
 
 func FetchImage(ctx context.Context, r *http.Request, imageURL string, log logger.Logger) (*http.Response, error) {

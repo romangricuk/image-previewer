@@ -2,10 +2,10 @@ package config
 
 import (
 	"errors"
-	"github.com/spf13/viper"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type Config struct {

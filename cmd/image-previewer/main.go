@@ -1,13 +1,15 @@
 package main
 
 import (
+	"errors"
 	"flag"
-	"github.com/romangricuk/image-previewer/internal/app"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/romangricuk/image-previewer/internal/app"
 )
 
 func main() {
@@ -30,7 +32,7 @@ func main() {
 		}
 	}()
 
-	if err := application.Run(); err != nil && err != http.ErrServerClosed {
+	if err := application.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("Failed to run application: %v", err)
 	}
 }

@@ -3,9 +3,9 @@ package image
 import (
 	"bytes"
 	"context"
-	"github.com/romangricuk/image-previewer/internal/logger"
 
 	"github.com/disintegration/imaging"
+	"github.com/romangricuk/image-previewer/internal/logger"
 )
 
 func ResizeImage(ctx context.Context, data []byte, width, height int, log logger.Logger) ([]byte, error) {
