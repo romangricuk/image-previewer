@@ -11,3 +11,6 @@ test:
 
 integration-test:
 	go test ./test/...
+
+lint:
+	golangci-lint run --config=.golangci.yml ./...
