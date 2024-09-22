@@ -112,7 +112,7 @@ http://localhost:<APP_PORT>/fill/<width>/<height>/<image_url>
 Чтобы изменить размер изображения до 300x200 пикселей:
 
 ```
-http://localhost:8080/fill/300/200/raw.githubusercontent.com/OtusGolang/final_project/master/examples/image-previewer/gopher_1024x252.jpg
+http://localhost:8080/fill/300/200/raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/gopher_1024x252.jpg
 ```
 
 **Примечание:** URL изображения должен быть без указания протокола (`http://` или `https://`).

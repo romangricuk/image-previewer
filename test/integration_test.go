@@ -56,7 +56,7 @@ func TestImageSizes(t *testing.T) {
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
-	baseURL := "https://raw.githubusercontent.com/OtusGolang/final_project/master/examples/image-previewer/"
+	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/"
 
 	images := []string{
 		"gopher_50x50.jpg",
@@ -105,7 +105,7 @@ func TestDifferentSizes(t *testing.T) {
 	defer stopTestApplication(application)
 
 	//nolint:lll
-	baseURL := "https://raw.githubusercontent.com/OtusGolang/final_project/master/examples/image-previewer/_gopher_original_1024x504.jpg"
+	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/_gopher_original_1024x504.jpg"
 
 	sizes := []struct {
 		width  int
@@ -153,7 +153,7 @@ func TestResponseHeaders(t *testing.T) {
 
 	port := os.Getenv("APP_PORT")
 	//nolint:lll
-	baseURL := "https://raw.githubusercontent.com/OtusGolang/final_project/master/examples/image-previewer/gopher_50x50.jpg"
+	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/gopher_50x50.jpg"
 	reqURL := fmt.Sprintf(
 		"http://localhost:%s/fill/300/200/%s",
 		port,

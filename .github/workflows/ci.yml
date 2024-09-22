@@ -24,6 +24,11 @@ jobs:
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
 
+      - name: Check test image accessibility
+        run: |
+          curl -I https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/gopher_50x50.jpg
+
+
       - name: Run lint
         run: make lint
 
