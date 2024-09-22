@@ -77,7 +77,7 @@ func stopTestApplication(application *app.Application) {
 	}
 }
 
-// Тест ресайза разных картинок
+// Тест ресайза разных картинок.
 func TestImageSizes(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
@@ -137,12 +137,13 @@ func TestImageSizes(t *testing.T) {
 	}
 }
 
-// Тест ресайза картинки разными размерами
+// Тест ресайза картинки разными размерами.
 func TestDifferentSizes(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
+	////nolint:LLL
 	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/test/data/_gopher_original_1024x504.jpg"
 
 	sizes := []struct {
@@ -185,7 +186,7 @@ func TestDifferentSizes(t *testing.T) {
 	}
 }
 
-// Тест заголовков
+// Тест заголовков.
 func TestResponseHeaders(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
@@ -211,14 +212,14 @@ func TestResponseHeaders(t *testing.T) {
 	)
 }
 
-// Тестируем проверку на timeout
+// Тестируем проверку на timeout.
 func TestRequestTimeout(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
 	// Используем контролируемый HTTP-сервер, который задерживает ответ
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(3 * time.Second) // Задержка больше, чем таймаут сервера
 		http.Error(w, "Timeout", http.StatusGatewayTimeout)
 	}))
@@ -237,7 +238,7 @@ func TestRequestTimeout(t *testing.T) {
 	}
 }
 
-// Тест для проверки, что изображение берется из кэша
+// Тест для проверки, что изображение берется из кэша.
 func TestImageFromCache(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
@@ -255,13 +256,13 @@ func TestImageFromCache(t *testing.T) {
 	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
 
 	// Первый запрос - изображение должно быть загружено с удаленного сервера
-	resp, err := http.Get(reqURL)
+	resp, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err, "Failed to get image first time")
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected status 200")
 
 	// Второй запрос - изображение должно быть взято из кэша
-	resp2, err := http.Get(reqURL)
+	resp2, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err, "Failed to get image second time")
 	defer resp2.Body.Close()
 	require.Equal(t, http.StatusOK, resp2.StatusCode, "Expected status 200")
@@ -270,7 +271,7 @@ func TestImageFromCache(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount), "Expected image to be served from cache")
 }
 
-// Тестируем, когда удаленный сервер не существует
+// Тестируем, когда удаленный сервер не существует.
 func TestRemoteServerNotExist(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
@@ -280,7 +281,7 @@ func TestRemoteServerNotExist(t *testing.T) {
 	imageURL := "nonexistent.domain/image.jpg"
 	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
 
-	resp, err := http.Get(reqURL)
+	resp, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err, "Failed to get image")
 	defer resp.Body.Close()
 
@@ -288,7 +289,7 @@ func TestRemoteServerNotExist(t *testing.T) {
 	require.Equal(t, http.StatusBadGateway, resp.StatusCode, "Expected status 502 Bad Gateway")
 }
 
-// Тестируем, когда удаленный сервер возвращает 404 Not Found
+// Тестируем, когда удаленный сервер возвращает 404 Not Found.
 func TestRemoteImageNotFound(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
@@ -301,7 +302,7 @@ func TestRemoteImageNotFound(t *testing.T) {
 	imageURL := strings.TrimPrefix(testServer.URL+"/nonexistent.jpg", "http://")
 	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
 
-	resp, err := http.Get(reqURL)
+	resp, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err, "Failed to get image")
 	defer resp.Body.Close()
 
@@ -309,14 +310,14 @@ func TestRemoteImageNotFound(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, resp.StatusCode, "Expected status 404 Not Found")
 }
 
-// Тестируем, когда удаленный сервер возвращает не изображение, а, например, текстовый файл
+// Тестируем, когда удаленный сервер возвращает не изображение, а, например, текстовый файл.
 func TestRemoteNonImageFile(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
 	// Создаем тестовый сервер, который возвращает текстовый файл
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintln(w, "This is not an image")
 	}))
@@ -325,7 +326,7 @@ func TestRemoteNonImageFile(t *testing.T) {
 	imageURL := strings.TrimPrefix(testServer.URL, "http://")
 	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
 
-	resp, err := http.Get(reqURL)
+	resp, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err, "Failed to get image")
 	defer resp.Body.Close()
 
@@ -333,14 +334,14 @@ func TestRemoteNonImageFile(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode, "Expected status 400 Bad Request")
 }
 
-// Тестируем, когда удаленный сервер возвращает 500 Internal Server Error
+// Тестируем, когда удаленный сервер возвращает 500 Internal Server Error.
 func TestRemoteServerError(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
 	// Создаем тестовый сервер, который возвращает 500
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusBadGateway)
 	}))
 	defer testServer.Close()
@@ -348,7 +349,7 @@ func TestRemoteServerError(t *testing.T) {
 	imageURL := strings.TrimPrefix(testServer.URL, "http://")
 	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
 
-	resp, err := http.Get(reqURL)
+	resp, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err, "Failed to get image")
 	defer resp.Body.Close()
 
@@ -356,7 +357,7 @@ func TestRemoteServerError(t *testing.T) {
 	require.Equal(t, http.StatusBadGateway, resp.StatusCode, "Expected status 502 Bad Gateway")
 }
 
-// Тестируем, когда изображение меньше, чем нужный размер
+// Тестируем, когда изображение меньше, чем нужный размер.
 func TestImageSmallerThanRequestedSize(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
@@ -372,7 +373,7 @@ func TestImageSmallerThanRequestedSize(t *testing.T) {
 	// Запрашиваем размер больше, чем исходный
 	reqURL := fmt.Sprintf("http://localhost:%s/fill/100/100/%s", port, imageURL)
 
-	resp, err := http.Get(reqURL)
+	resp, err := http.Get(reqURL) //nolint:gosec,noctx
 	require.NoError(t, err, "Failed to get image")
 	defer resp.Body.Close()
 
