@@ -1,6 +1,8 @@
 # Image Previewer
 
 ![CI](https://github.com/romangricuk/image-previewer/actions/workflows/ci.yml/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/romangricuk/image-previewer)](https://goreportcard.com/report/github.com/romangricuk/image-previewer)
+
 
 ## Обзор
 
