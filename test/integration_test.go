@@ -152,7 +152,7 @@ func TestResponseHeaders(t *testing.T) {
 	defer stopTestApplication(application)
 
 	port := os.Getenv("APP_PORT")
-	//nolint:lll
+
 	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/gopher_50x50.jpg"
 	reqURL := fmt.Sprintf(
 		"http://localhost:%s/fill/300/200/%s",
