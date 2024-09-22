@@ -44,10 +44,14 @@ func startTestApplication() (application *app.Application, port string, err erro
 	// Устанавливаем переменные окружения для тестов
 	os.Setenv("APP_PORT", port)
 	os.Setenv("CACHE_SIZE", "2")
-	os.Setenv("CACHE_DIR", "../cache")
+	os.Setenv("CACHE_DIR", "./cache")
 	os.Setenv("LOG_LEVEL", "debug")
 	os.Setenv("SHUTDOWN_TIMEOUT", "5s")
-	// os.Setenv("DISABLE_LOGGING", "true")
+
+	cacheDir := os.Getenv("CACHE_DIR")
+	if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil {
+		return nil, "", fmt.Errorf("failed to create cache directory: %w", err)
+	}
 
 	application, err = app.NewApplication("")
 	if err != nil {
