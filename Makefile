@@ -1,5 +1,5 @@
 run:
-	docker-compose up
+	docker compose up
 
 build:
 	go build -o bin/image-previewer ./cmd/image-previewer

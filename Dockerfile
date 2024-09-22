@@ -1,18 +1,27 @@
-FROM golang:1.22-alpine AS builder
+# Собираем в гошке
+FROM golang:1.22 as build
 
-WORKDIR /app
+ENV CODE_DIR /go/src/
 
-COPY go.mod go.sum ./
+WORKDIR ${CODE_DIR}
+
+# Кэшируем слои с модулями
+COPY go.mod .
+COPY go.sum .
 RUN go mod download
 
-COPY . .
+COPY . ${CODE_DIR}
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o image-previewer ./cmd/image-previewer
+# Собираем статические бинарники Go (без зависимостей на Си API),
+# иначе они не будут работать в alpine образе.
+ARG LDFLAGS
+RUN CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o /opt/image-previewer-app cmd/image-previewer/main.go
 
-FROM scratch
+# На выходе тонкий образ
+FROM alpine:3.9
 
-WORKDIR /app
+# Установка curl для healthcheck
+RUN apk --no-cache add curl
 
-COPY --from=builder /app/image-previewer .
-
-CMD ["./image-previewer"]
+# Копируем все собранные бинарники
+COPY --from=build /opt/image-previewer-app "/opt/image-previewer-app"

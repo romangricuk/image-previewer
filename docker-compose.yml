@@ -10,5 +10,7 @@ services:
       LOG_LEVEL: "${LOG_LEVEL}"
       SHUTDOWN_TIMEOUT: "${SHUTDOWN_TIMEOUT}"
       DISABLE_LOGGING: "${DISABLE_LOGGING}"
+    command: [ "./opt/image-previewer-app" ]
+
     volumes:
       - ./cache:${CACHE_DIR}
