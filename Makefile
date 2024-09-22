@@ -1,10 +1,9 @@
-.PHONY: build run test
+run:
+	docker-compose up
 
 build:
 	go build -o bin/image-previewer ./cmd/image-previewer
 
-run:
-	go run ./cmd/image-previewer/main.go --config=./config/config.yaml
 
 test:
 	go test -race -count 100 ./internal/...

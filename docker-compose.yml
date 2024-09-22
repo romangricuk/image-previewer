@@ -1,0 +1,14 @@
+services:
+  image-previewer:
+    build: .
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    environment:
+      APP_PORT: "${APP_PORT}"
+      CACHE_SIZE: "${CACHE_SIZE}"
+      CACHE_DIR: "${CACHE_DIR}"
+      LOG_LEVEL: "${LOG_LEVEL}"
+      SHUTDOWN_TIMEOUT: "${SHUTDOWN_TIMEOUT}"
+      DISABLE_LOGGING: "${DISABLE_LOGGING}"
+    volumes:
+      - ./cache:${CACHE_DIR}

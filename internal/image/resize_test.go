@@ -18,7 +18,7 @@ func TestResizeImage(t *testing.T) {
 	log := logger.NewTestLogger()
 
 	// Путь к тестовому изображению
-	testImagePath := filepath.Join("..", "..", "testdata", "test_image.jpg")
+	testImagePath := filepath.Join("data", "test_image.jpg")
 
 	// Открываем файл изображения
 	file, err := os.Open(testImagePath)
@@ -66,7 +66,7 @@ func TestResizeImageWithCancelledContext(t *testing.T) {
 	log := logger.NewTestLogger()
 
 	// Путь к тестовому изображению
-	testImagePath := filepath.Join("..", "..", "testdata", "test_image.jpg")
+	testImagePath := filepath.Join("data", "test_image.jpg")
 
 	// Открываем файл изображения
 	file, err := os.Open(testImagePath)

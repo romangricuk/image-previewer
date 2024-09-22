@@ -1,14 +1,18 @@
-FROM golang:1.22-alpine
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . ./
+COPY . .
 
-RUN go build -o image-previewer ./cmd/image-previewer
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o image-previewer ./cmd/image-previewer
 
-EXPOSE 8080
+FROM scratch
+
+WORKDIR /app
+
+COPY --from=builder /app/image-previewer .
 
 CMD ["./image-previewer"]

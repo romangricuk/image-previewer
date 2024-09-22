@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -76,12 +77,13 @@ func stopTestApplication(application *app.Application) {
 	}
 }
 
+// Тест ресайза разных картинок
 func TestImageSizes(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
-	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/"
+	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/test/data/"
 
 	images := []string{
 		"gopher_50x50.jpg",
@@ -107,8 +109,7 @@ func TestImageSizes(t *testing.T) {
 				strings.TrimPrefix(imageURL, "https://"),
 			)
 
-			//nolint:gosec,noctx
-			resp, err := http.Get(reqURL)
+			resp, err := http.Get(reqURL) //nolint:gosec,noctx
 			require.NoError(t, err, "Failed to get image %s", imageName)
 			defer resp.Body.Close()
 
@@ -136,13 +137,13 @@ func TestImageSizes(t *testing.T) {
 	}
 }
 
+// Тест ресайза картинки разными размерами
 func TestDifferentSizes(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
-	//nolint:lll
-	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/_gopher_original_1024x504.jpg"
+	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/test/data/_gopher_original_1024x504.jpg"
 
 	sizes := []struct {
 		width  int
@@ -184,12 +185,13 @@ func TestDifferentSizes(t *testing.T) {
 	}
 }
 
+// Тест заголовков
 func TestResponseHeaders(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
 	defer stopTestApplication(application)
 
-	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/gopher_50x50.jpg"
+	baseURL := "https://raw.githubusercontent.com/romangricuk/image-previewer/master/test/data/gopher_50x50.jpg"
 	reqURL := fmt.Sprintf(
 		"http://localhost:%s/fill/300/200/%s",
 		port,
@@ -209,6 +211,7 @@ func TestResponseHeaders(t *testing.T) {
 	)
 }
 
+// Тестируем проверку на timeout
 func TestRequestTimeout(t *testing.T) {
 	application, port, err := startTestApplication()
 	require.NoError(t, err)
@@ -217,7 +220,7 @@ func TestRequestTimeout(t *testing.T) {
 	// Используем контролируемый HTTP-сервер, который задерживает ответ
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(3 * time.Second) // Задержка больше, чем таймаут сервера
-		http.ServeFile(w, r, "test_image.jpg")
+		http.Error(w, "Timeout", http.StatusGatewayTimeout)
 	}))
 	defer testServer.Close()
 
@@ -232,4 +235,156 @@ func TestRequestTimeout(t *testing.T) {
 	if resp != nil {
 		resp.Body.Close()
 	}
+}
+
+// Тест для проверки, что изображение берется из кэша
+func TestImageFromCache(t *testing.T) {
+	application, port, err := startTestApplication()
+	require.NoError(t, err)
+	defer stopTestApplication(application)
+
+	// Создаем тестовый сервер для изображения и счетчик запросов
+	var requestCount int32
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		http.ServeFile(w, r, "test/data/gopher_50x50.jpg")
+	}))
+	defer testServer.Close()
+
+	imageURL := strings.TrimPrefix(testServer.URL, "http://")
+	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
+
+	// Первый запрос - изображение должно быть загружено с удаленного сервера
+	resp, err := http.Get(reqURL)
+	require.NoError(t, err, "Failed to get image first time")
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected status 200")
+
+	// Второй запрос - изображение должно быть взято из кэша
+	resp2, err := http.Get(reqURL)
+	require.NoError(t, err, "Failed to get image second time")
+	defer resp2.Body.Close()
+	require.Equal(t, http.StatusOK, resp2.StatusCode, "Expected status 200")
+
+	// Проверяем, что запрос к удаленному серверу был выполнен только один раз
+	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount), "Expected image to be served from cache")
+}
+
+// Тестируем, когда удаленный сервер не существует
+func TestRemoteServerNotExist(t *testing.T) {
+	application, port, err := startTestApplication()
+	require.NoError(t, err)
+	defer stopTestApplication(application)
+
+	// Используем несуществующий домен
+	imageURL := "nonexistent.domain/image.jpg"
+	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
+
+	resp, err := http.Get(reqURL)
+	require.NoError(t, err, "Failed to get image")
+	defer resp.Body.Close()
+
+	// Ожидаем статус ошибки
+	require.Equal(t, http.StatusBadGateway, resp.StatusCode, "Expected status 502 Bad Gateway")
+}
+
+// Тестируем, когда удаленный сервер возвращает 404 Not Found
+func TestRemoteImageNotFound(t *testing.T) {
+	application, port, err := startTestApplication()
+	require.NoError(t, err)
+	defer stopTestApplication(application)
+
+	// Создаем тестовый сервер, который возвращает 404
+	testServer := httptest.NewServer(http.NotFoundHandler())
+	defer testServer.Close()
+
+	imageURL := strings.TrimPrefix(testServer.URL+"/nonexistent.jpg", "http://")
+	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
+
+	resp, err := http.Get(reqURL)
+	require.NoError(t, err, "Failed to get image")
+	defer resp.Body.Close()
+
+	// Ожидаем статус ошибки
+	require.Equal(t, http.StatusNotFound, resp.StatusCode, "Expected status 404 Not Found")
+}
+
+// Тестируем, когда удаленный сервер возвращает не изображение, а, например, текстовый файл
+func TestRemoteNonImageFile(t *testing.T) {
+	application, port, err := startTestApplication()
+	require.NoError(t, err)
+	defer stopTestApplication(application)
+
+	// Создаем тестовый сервер, который возвращает текстовый файл
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintln(w, "This is not an image")
+	}))
+	defer testServer.Close()
+
+	imageURL := strings.TrimPrefix(testServer.URL, "http://")
+	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
+
+	resp, err := http.Get(reqURL)
+	require.NoError(t, err, "Failed to get image")
+	defer resp.Body.Close()
+
+	// Ожидаем статус ошибки
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode, "Expected status 400 Bad Request")
+}
+
+// Тестируем, когда удаленный сервер возвращает 500 Internal Server Error
+func TestRemoteServerError(t *testing.T) {
+	application, port, err := startTestApplication()
+	require.NoError(t, err)
+	defer stopTestApplication(application)
+
+	// Создаем тестовый сервер, который возвращает 500
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Internal Server Error", http.StatusBadGateway)
+	}))
+	defer testServer.Close()
+
+	imageURL := strings.TrimPrefix(testServer.URL, "http://")
+	reqURL := fmt.Sprintf("http://localhost:%s/fill/300/200/%s", port, imageURL)
+
+	resp, err := http.Get(reqURL)
+	require.NoError(t, err, "Failed to get image")
+	defer resp.Body.Close()
+
+	// Ожидаем статус ошибки
+	require.Equal(t, http.StatusBadGateway, resp.StatusCode, "Expected status 502 Bad Gateway")
+}
+
+// Тестируем, когда изображение меньше, чем нужный размер
+func TestImageSmallerThanRequestedSize(t *testing.T) {
+	application, port, err := startTestApplication()
+	require.NoError(t, err)
+	defer stopTestApplication(application)
+
+	// Используем изображение меньшего размера
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "data/gopher_50x50.jpg")
+	}))
+	defer testServer.Close()
+
+	imageURL := strings.TrimPrefix(testServer.URL, "http://")
+	// Запрашиваем размер больше, чем исходный
+	reqURL := fmt.Sprintf("http://localhost:%s/fill/100/100/%s", port, imageURL)
+
+	resp, err := http.Get(reqURL)
+	require.NoError(t, err, "Failed to get image")
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected status 200")
+
+	data, err := io.ReadAll(resp.Body)
+	require.NoError(t, err, "Failed to read response body")
+
+	img, _, err := image.Decode(bytes.NewReader(data))
+	require.NoError(t, err, "Failed to decode image")
+
+	// Проверяем, что изображение имеет запрошенный размер
+	assert.Equal(t, 100, img.Bounds().Dx(), "Width mismatch")
+	assert.Equal(t, 100, img.Bounds().Dy(), "Height mismatch")
 }

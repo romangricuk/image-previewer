@@ -24,3 +24,4 @@ Thumbs.db
 *.bak
 bin/*
 cache/*
+test/cache

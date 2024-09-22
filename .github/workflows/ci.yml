@@ -26,7 +26,7 @@ jobs:
 
       - name: Check test image accessibility
         run: |
-          curl -I https://raw.githubusercontent.com/romangricuk/image-previewer/master/testdata/gopher_50x50.jpg
+          curl -I https://raw.githubusercontent.com/romangricuk/image-previewer/master/test/data/gopher_50x50.jpg
 
 
       - name: Run lint
